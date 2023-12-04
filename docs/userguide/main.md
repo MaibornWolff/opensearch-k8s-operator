@@ -6,12 +6,8 @@ This guide is intended for users of the Opensearch Operator. If you want to cont
 
 The Operator can be easily installed using Helm:
 
-1. Add the helm repo: `helm repo add opensearch-operator https://opster.github.io/opensearch-k8s-operator/`
+1. Add the helm repo: `helm repo add opensearch-operator https://maibornwolff.github.io/opensearch-operator/`
 2. Install the Operator: `helm install opensearch-operator opensearch-operator/opensearch-operator`
-
-Follow the instructions in this video to install the Operator:
-
-[![Watch the video](https://opster.com/wp-content/uploads/2022/05/Operator-Installation-Tutorial.png)](https://player.vimeo.com/video/708641527)
 
 A few notes on operator releases:
 
@@ -961,7 +957,7 @@ Note that currently a combination of both approaches is not possible. Once you u
 
 ### Securityconfig
 
-You can provide your own securityconfig (see the entire [demo securityconfig](https://github.com/Opster/opensearch-k8s-operator/blob/main/opensearch-operator/examples/securityconfig-secret.yaml) as an example and the [Access control documentation](https://opensearch.org/docs/latest/security-plugin/access-control/index/) of the OpenSearch project) with your own users and roles. To do that, you must provide a secret with all the required securityconfig yaml files.
+You can provide your own securityconfig (see the entire [demo securityconfig](https://github.com/maibornwolff/opensearch-operator/blob/main/opensearch-operator/examples/securityconfig-secret.yaml) as an example and the [Access control documentation](https://opensearch.org/docs/latest/security-plugin/access-control/index/) of the OpenSearch project) with your own users and roles. To do that, you must provide a secret with all the required securityconfig yaml files.
 
 The Operator can be controlled using the following fields in the `OpenSearchCluster` custom resource:
 

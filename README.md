@@ -1,20 +1,12 @@
-![build](https://github.com/opster/opensearch-k8s-operator/actions/workflows/docker-build.yaml/badge.svg) ![test](https://github.com/opster/opensearch-k8s-operator/actions/workflows/testing.yaml/badge.svg) ![release](https://img.shields.io/github/v/release/opster/opensearch-k8s-operator) [![Golang Lint](https://github.com/Opster/opensearch-k8s-operator/actions/workflows/linting.yaml/badge.svg)](https://github.com/Opster/opensearch-k8s-operator/actions/workflows/linting.yaml) [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/opensearch-operator)](https://artifacthub.io/packages/search?repo=opensearch-operator)
-
 # OpenSearch Kubernetes Operator
 
-The Kubernetes OpenSearch Operator is used for automating the deployment, provisioning, management, and orchestration of OpenSearch clusters and OpenSearch dashboards.
+**This is a fork of the [opensearch-k8s-operator](https://github.com/opensearch-project/opensearch-k8s-operator) that was formerly hosted by [Opster](https://opster.com) and is now part of the opensearch-project. Due to confusion and instability in the project, MaibornWolff has decided to (temporarily) provide a fork of the operator with compatible and stable releases. Feel free to open an issue or start a discussion if you have questions.**
 
-To get all the capabilities of the Operator with a UI, you can use the free [Opster Management Console](https://opster.com/opensearch-opster-management-console/). Beyond being able to easily carry out all of the actions provided by the Operator, it also include additional features like monitoring and more.
+The Kubernetes OpenSearch Operator is used for automating the deployment, provisioning, management, and orchestration of OpenSearch clusters and OpenSearch dashboards.
 
 ## Getting started
 
 The Operator can be easily installed using helm on any CNCF-certified Kubernetes cluster. Please refer to the [User Guide](./docs/userguide/main.md) for installation instructions.
-
-## Roadmap
-
-- Auto-Scaler.
-- OpenShift support.
-- Data-prepper support.
 
 ## Current feature list
 
@@ -35,23 +27,12 @@ Features:
 - [x] Cluster configurations and nodes' settings updates.
 - [x] Operator Monitoring, with Prometheus and Grafana.
 
-
 ## Installation
 
 The Operator can be easily installed using Helm:
 
-1. Add the helm repo: `helm repo add opensearch-operator https://opster.github.io/opensearch-k8s-operator/`
+1. Add the helm repo: `helm repo add opensearch-operator https://maibornwolff.github.io/opensearch-operator/`
 2. Install the Operator: `helm install opensearch-operator opensearch-operator/opensearch-operator`
-
-## OpenSearch Kubernetes Operator installation & demo video
-
-[![Watch the video](https://opster.com/wp-content/uploads/2022/05/Operator-Installation-Tutorial.png)](https://player.vimeo.com/video/708641527)
-
-## Manage OpenSearch on K8s through a single interface (UI)
-
-To get all the capabilities of the Operator with a UI, you can use the free [Opster Management Console](https://opster.com/opensearch-opster-management-console/). Beyond being able to easily carry out all of the actions provided by the Operator, it also include additional features like monitoring and more.
-
-[![Watch the video](https://opster.com/wp-content/uploads/2023/04/Screen-cap-for-omc-video.png)](https://player.vimeo.com/video/767761262)
 
 ## Compatibility
 
@@ -59,6 +40,7 @@ The opensearch k8s operator aims to be compatible to all supported opensearch ve
 
 | Operator Version | Min Supported Opensearch Version | Max supported Opensearch version | Comment |
 |------------------|----------------------------------|----------------------------------|---------|
+| 2.4              | 1.0                              | 2.8                              |         |
 | 2.3              | 1.0                              | 2.8                              |         |
 | 2.2              | 1.0                              | 2.5                              |         |
 | 2.1              | 1.0                              | 2.3                              |         |
