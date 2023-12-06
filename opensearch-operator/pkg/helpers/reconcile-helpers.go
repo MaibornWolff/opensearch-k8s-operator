@@ -11,9 +11,9 @@ import (
 )
 
 func ResolveInitHelperImage(cr *opsterv1.OpenSearchCluster) (result opsterv1.ImageSpec) {
-	defaultRepo := "public.ecr.aws/opsterio"
+	defaultRepo := "ghcr.io/maibornwolff/opensearch-operator"
 	defaultImage := "busybox"
-	defaultVersion := "1.27.2-buildx"
+	defaultVersion := "1.27.2"
 
 	// If a custom InitHelper image is specified, use it.
 	if cr.Spec.InitHelper.ImageSpec != nil {

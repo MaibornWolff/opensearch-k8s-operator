@@ -559,7 +559,7 @@ InitHelperConfig defines global Opensearch InitHelper image configuration
         <td>string</td>
         <td>Define InitHelper image</td>
         <td>false</td>
-        <td>public.ecr.aws/opsterio/busybox</td>
+        <td>ghcr.io/maibornwolff/opensearch-operator/busybox</td>
       </tr><tr>
       </tr><tr>
         <td><b>imagePullPolicy</b></td>
