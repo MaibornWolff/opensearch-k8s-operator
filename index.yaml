@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   opensearch-cluster:
   - apiVersion: v2
+    appVersion: 2.6.0
+    created: "2024-04-25T06:40:26.613616805Z"
+    description: A Helm chart for OpenSearch Cluster
+    digest: 0e43ee8c5f0f3a212503bc83be7b3012dac22f586c5588fcc5621cb43a53d61b
+    name: opensearch-cluster
+    type: application
+    urls:
+    - https://MaibornWolff.github.io/opensearch-operator/opensearch-cluster-2.6.0.tgz
+    version: 2.6.0
+  - apiVersion: v2
     appVersion: 2.5.0
     created: "2023-12-06T09:33:52.514353754Z"
     description: A Helm chart for OpenSearch Cluster
@@ -22,6 +32,16 @@ entries:
     - https://maibornwolff.github.io/opensearch-operator/opensearch-cluster-2.4.0.tgz
     version: 2.4.0
   opensearch-operator:
+  - apiVersion: v2
+    appVersion: 2.6.0
+    created: "2024-04-25T06:40:26.61498536Z"
+    description: The OpenSearch Operator Helm chart for Kubernetes
+    digest: aa76b51bdecf5fc6d0dc85b803ffc300dbb6018750d124a5e3308700a7943562
+    name: opensearch-operator
+    type: application
+    urls:
+    - https://MaibornWolff.github.io/opensearch-operator/opensearch-operator-2.6.0.tgz
+    version: 2.6.0
   - apiVersion: v2
     appVersion: 2.5.0
     created: "2023-12-06T09:33:52.516308008Z"
@@ -202,4 +222,4 @@ entries:
     urls:
     - https://maibornwolff.github.io/opensearch-operator/opensearch-operator-0.1.0.tgz
     version: 0.1.0
-generated: "2023-12-06T09:33:52.513602643Z"
+generated: "2024-04-25T06:40:26.613143471Z"
