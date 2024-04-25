@@ -7,8 +7,6 @@ jobs:
   release:
     name: Push busybox image to ghcr
     runs-on: ubuntu-latest
-    environment:
-      name: k8s-operator
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
