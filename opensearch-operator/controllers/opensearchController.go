@@ -61,8 +61,10 @@ type OpenSearchClusterReconciler struct {
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=namespaces,verbs=get;list;create;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=events,verbs=create;update;patch
+//+kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=policy,resources=poddisruptionbudgets,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=monitoring.coreos.com,resources=servicemonitors,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -304,6 +306,12 @@ func (r *OpenSearchClusterReconciler) reconcilePhaseRunning(ctx context.Context)
 		&reconcilerContext,
 		r.Instance,
 	)
+	snapshotrepository := reconcilers.NewSnapshotRepositoryReconciler(
+		r.Client,
+		ctx,
+		r.Recorder,
+		r.Instance,
+	)
 
 	componentReconcilers := []reconcilers.ComponentReconciler{
 		tls.Reconcile,
@@ -314,6 +322,7 @@ func (r *OpenSearchClusterReconciler) reconcilePhaseRunning(ctx context.Context)
 		dashboards.Reconcile,
 		upgrade.Reconcile,
 		restart.Reconcile,
+		snapshotrepository.Reconcile,
 	}
 	for _, rec := range componentReconcilers {
 		result, err := rec()

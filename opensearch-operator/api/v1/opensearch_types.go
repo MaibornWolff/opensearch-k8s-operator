@@ -84,6 +84,27 @@ type InitHelperConfig struct {
 	Version    *string                     `json:"version,omitempty"`
 }
 
+type ProbesConfig struct {
+	Liveness  *ProbeConfig          `json:"liveness,omitempty"`
+	Readiness *ReadinessProbeConfig `json:"readiness,omitempty"`
+	Startup   *ProbeConfig          `json:"startup,omitempty"`
+}
+
+type ProbeConfig struct {
+	InitialDelaySeconds int32 `json:"initialDelaySeconds,omitempty"`
+	PeriodSeconds       int32 `json:"periodSeconds,omitempty"`
+	TimeoutSeconds      int32 `json:"timeoutSeconds,omitempty"`
+	SuccessThreshold    int32 `json:"successThreshold,omitempty"`
+	FailureThreshold    int32 `json:"failureThreshold,omitempty"`
+}
+
+type ReadinessProbeConfig struct {
+	InitialDelaySeconds int32 `json:"initialDelaySeconds,omitempty"`
+	PeriodSeconds       int32 `json:"periodSeconds,omitempty"`
+	TimeoutSeconds      int32 `json:"timeoutSeconds,omitempty"`
+	FailureThreshold    int32 `json:"failureThreshold,omitempty"`
+}
+
 type NodePool struct {
 	Component                 string                            `json:"component"`
 	Replicas                  int32                             `json:"replicas"`
@@ -102,6 +123,7 @@ type NodePool struct {
 	Env                       []corev1.EnvVar                   `json:"env,omitempty"`
 	PriorityClassName         string                            `json:"priorityClassName,omitempty"`
 	Pdb                       *PdbConfig                        `json:"pdb,omitempty"`
+	Probes                    *ProbesConfig                     `json:"probes,omitempty"`
 }
 
 // PersistencConfig defines options for data persistence
@@ -244,6 +266,12 @@ type SecurityConfig struct {
 	AdminSecret corev1.LocalObjectReference `json:"adminSecret,omitempty"`
 	// Secret that contains fields username and password to be used by the operator to access the opensearch cluster for node draining. Must be set if custom securityconfig is provided.
 	AdminCredentialsSecret corev1.LocalObjectReference `json:"adminCredentialsSecret,omitempty"`
+	UpdateJob              SecurityUpdateJobConfig     `json:"updateJob,omitempty"`
+}
+
+// Specific configs for the SecurityConfig update job
+type SecurityUpdateJobConfig struct {
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 type ImageSpec struct {
@@ -265,6 +293,8 @@ type AdditionalVolume struct {
 	ConfigMap *corev1.ConfigMapVolumeSource `json:"configMap,omitempty"`
 	// EmptyDir to use to populate the volume
 	EmptyDir *corev1.EmptyDirVolumeSource `json:"emptyDir,omitempty"`
+	// CSI object to use to populate the volume
+	CSI *corev1.CSIVolumeSource `json:"csi,omitempty"`
 	// Whether to restart the pods on content change
 	RestartPods bool `json:"restartPods,omitempty"`
 }
@@ -356,4 +386,25 @@ func (s ImageSpec) GetImage() string {
 		return ""
 	}
 	return *s.Image
+}
+
+func (s *Security) GetConfig() *SecurityConfig {
+	if s == nil {
+		return nil
+	}
+	return s.Config
+}
+
+func (s *Security) GetTls() *TlsConfig {
+	if s == nil {
+		return nil
+	}
+	return s.Tls
+}
+
+func (sc *SecurityConfig) GetUpdateJob() SecurityUpdateJobConfig {
+	if sc == nil {
+		return SecurityUpdateJobConfig{}
+	}
+	return sc.UpdateJob
 }

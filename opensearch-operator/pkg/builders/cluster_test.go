@@ -386,26 +386,6 @@ var _ = Describe("Builders", func() {
 		})
 	})
 
-	When("When Reconciling the snapshotRepoJob", func() {
-		It("should create a snapshotconfig batch job", func() {
-			clusterObject := ClusterDescWithVersion("2.2.1")
-			clusterObject.ObjectMeta.Namespace = "snapshot"
-			clusterObject.Spec.General.ServiceName = "snapshotservice"
-
-			snapshotRepoSettings := map[string]string{"bucket": "opensearch-s3-snapshot", "region": "us-east-1", "base_path": "os-snapshot"}
-			snapshotConfig := opsterv1.SnapshotRepoConfig{
-				Name:     "os-snap",
-				Type:     "s3",
-				Settings: snapshotRepoSettings,
-			}
-			clusterObject.Spec.General.SnapshotRepositories = []opsterv1.SnapshotRepoConfig{snapshotConfig}
-			result := NewSnapshotRepoconfigUpdateJob(&clusterObject, "snapshotrepoconfig", "foobar", "snapshotrepoconfig/checksum", nil, nil)
-			Expect(result.Spec.Template.Spec.Containers[0].Name).To(Equal("snapshotrepoconfig"))
-			snapshotCmd := "curl --fail-with-body -s -k -u \"$(cat /mnt/admin-credentials/username):$(cat /mnt/admin-credentials/password)\" -X PUT https://snapshotservice.snapshot.svc.cluster.local:9200/_snapshot/os-snap?pretty -H \"Content-Type: application/json\" -d '{\"type\": \"s3\", \"settings\": {\"base_path\": \"os-snapshot\" , \"bucket\": \"opensearch-s3-snapshot\" , \"region\": \"us-east-1\"}}'; "
-			Expect(result.Spec.Template.Spec.Containers[0].Args).To(ContainElement(snapshotCmd))
-		})
-	})
-
 	When("Constructing a bootstrap pod", func() {
 		It("should use General.DefaultRepo for the InitHelper image if configured", func() {
 			clusterObject := ClusterDescWithVersion("2.2.1")
@@ -685,6 +665,185 @@ var _ = Describe("Builders", func() {
 				"testAnnotationKey":  "testValue",
 				"testAnnotationKey2": "testValue2",
 			}))
+		})
+	})
+
+	When("Using custom probe timeouts and thresholds for OpenSearch startup", func() {
+		It("should have default probes timeouts and thresholds", func() {
+			clusterObject := ClusterDescWithVersion("2.7.0")
+			nodePool := opsterv1.NodePool{
+				Component: "masters",
+				Roles:     []string{"search"},
+			}
+			result := NewSTSForNodePool("foobar", &clusterObject, nodePool, "foobar", nil, nil, nil)
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.InitialDelaySeconds).To(Equal(int32(10)))
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.TimeoutSeconds).To(Equal(int32(5)))
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.PeriodSeconds).To(Equal(int32(20)))
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.SuccessThreshold).To(Equal(int32(1)))
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.FailureThreshold).To(Equal(int32(10)))
+
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.InitialDelaySeconds).To(Equal(int32(10)))
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.TimeoutSeconds).To(Equal(int32(5)))
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.PeriodSeconds).To(Equal(int32(20)))
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.SuccessThreshold).To(Equal(int32(1)))
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.FailureThreshold).To(Equal(int32(10)))
+
+			Expect(result.Spec.Template.Spec.Containers[0].ReadinessProbe.InitialDelaySeconds).To(Equal(int32(60)))
+			Expect(result.Spec.Template.Spec.Containers[0].ReadinessProbe.TimeoutSeconds).To(Equal(int32(30)))
+			Expect(result.Spec.Template.Spec.Containers[0].ReadinessProbe.PeriodSeconds).To(Equal(int32(30)))
+			Expect(result.Spec.Template.Spec.Containers[0].ReadinessProbe.FailureThreshold).To(Equal(int32(5)))
+		})
+
+		It("should have use probes timeouts and thresholds as in given config only for single value change", func() {
+			clusterObject := ClusterDescWithVersion("2.7.0")
+			nodePool := opsterv1.NodePool{
+				Component: "masters",
+				Roles:     []string{"search"},
+				Probes: &opsterv1.ProbesConfig{
+					Liveness: &opsterv1.ProbeConfig{
+						FailureThreshold: 15,
+					},
+					Startup: &opsterv1.ProbeConfig{
+						FailureThreshold: 11,
+					},
+					Readiness: &opsterv1.ReadinessProbeConfig{
+						FailureThreshold: 9,
+					},
+				},
+			}
+			result := NewSTSForNodePool("foobar", &clusterObject, nodePool, "foobar", nil, nil, nil)
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.InitialDelaySeconds).To(Equal(int32(10)))
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.TimeoutSeconds).To(Equal(int32(5)))
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.PeriodSeconds).To(Equal(int32(20)))
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.SuccessThreshold).To(Equal(int32(1)))
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.FailureThreshold).To(Equal(int32(15)))
+
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.InitialDelaySeconds).To(Equal(int32(10)))
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.TimeoutSeconds).To(Equal(int32(5)))
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.PeriodSeconds).To(Equal(int32(20)))
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.SuccessThreshold).To(Equal(int32(1)))
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.FailureThreshold).To(Equal(int32(11)))
+
+			Expect(result.Spec.Template.Spec.Containers[0].ReadinessProbe.InitialDelaySeconds).To(Equal(int32(60)))
+			Expect(result.Spec.Template.Spec.Containers[0].ReadinessProbe.TimeoutSeconds).To(Equal(int32(30)))
+			Expect(result.Spec.Template.Spec.Containers[0].ReadinessProbe.PeriodSeconds).To(Equal(int32(30)))
+			Expect(result.Spec.Template.Spec.Containers[0].ReadinessProbe.FailureThreshold).To(Equal(int32(9)))
+		})
+
+		It("should have use probes timeouts and thresholds as in given config only for all values changed", func() {
+			clusterObject := ClusterDescWithVersion("2.7.0")
+			nodePool := opsterv1.NodePool{
+				Component: "masters",
+				Roles:     []string{"search"},
+				Probes: &opsterv1.ProbesConfig{
+					Liveness: &opsterv1.ProbeConfig{
+						InitialDelaySeconds: 12,
+						TimeoutSeconds:      6,
+						PeriodSeconds:       25,
+						SuccessThreshold:    2,
+						FailureThreshold:    15,
+					},
+					Startup: &opsterv1.ProbeConfig{
+						InitialDelaySeconds: 14,
+						TimeoutSeconds:      7,
+						PeriodSeconds:       27,
+						SuccessThreshold:    3,
+						FailureThreshold:    11,
+					},
+					Readiness: &opsterv1.ReadinessProbeConfig{
+						InitialDelaySeconds: 65,
+						TimeoutSeconds:      34,
+						PeriodSeconds:       33,
+						FailureThreshold:    9,
+					},
+				},
+			}
+			result := NewSTSForNodePool("foobar", &clusterObject, nodePool, "foobar", nil, nil, nil)
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.InitialDelaySeconds).To(Equal(int32(12)))
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.TimeoutSeconds).To(Equal(int32(6)))
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.PeriodSeconds).To(Equal(int32(25)))
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.SuccessThreshold).To(Equal(int32(2)))
+			Expect(result.Spec.Template.Spec.Containers[0].LivenessProbe.FailureThreshold).To(Equal(int32(15)))
+
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.InitialDelaySeconds).To(Equal(int32(14)))
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.TimeoutSeconds).To(Equal(int32(7)))
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.PeriodSeconds).To(Equal(int32(27)))
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.SuccessThreshold).To(Equal(int32(3)))
+			Expect(result.Spec.Template.Spec.Containers[0].StartupProbe.FailureThreshold).To(Equal(int32(11)))
+
+			Expect(result.Spec.Template.Spec.Containers[0].ReadinessProbe.InitialDelaySeconds).To(Equal(int32(65)))
+			Expect(result.Spec.Template.Spec.Containers[0].ReadinessProbe.TimeoutSeconds).To(Equal(int32(34)))
+			Expect(result.Spec.Template.Spec.Containers[0].ReadinessProbe.PeriodSeconds).To(Equal(int32(33)))
+			Expect(result.Spec.Template.Spec.Containers[0].ReadinessProbe.FailureThreshold).To(Equal(int32(9)))
+		})
+	})
+
+	When("Configuring InitHelper Resources", func() {
+		It("should propagate Resources to all init containers", func() {
+			clusterObject := ClusterDescWithVersion("2.2.1")
+			clusterObject.Spec.InitHelper = opsterv1.InitHelperConfig{
+				Resources: corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("1"),
+						corev1.ResourceMemory: resource.MustParse("1Gi"),
+					},
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("500m"),
+						corev1.ResourceMemory: resource.MustParse("512Mi"),
+					},
+				},
+			}
+			nodePoolSts := NewSTSForNodePool("foobar", &clusterObject, opsterv1.NodePool{}, "foobar", nil, nil, nil)
+			for _, container := range nodePoolSts.Spec.Template.Spec.InitContainers {
+				Expect(container.Resources).To(Equal(clusterObject.Spec.InitHelper.Resources))
+			}
+			bootstrapPod := NewBootstrapPod(&clusterObject, nil, nil)
+			for _, container := range bootstrapPod.Spec.InitContainers {
+				Expect(container.Resources).To(Equal(clusterObject.Spec.InitHelper.Resources))
+			}
+		})
+	})
+
+	When("Configuring Security Config UpdateJob Resources", func() {
+		It("should propagate Resources to the Security Config UpdateJob", func() {
+			clusterObject := ClusterDescWithVersion("2.2.1")
+			clusterObject.Spec.Security = &opsterv1.Security{
+				Config: &opsterv1.SecurityConfig{
+					UpdateJob: opsterv1.SecurityUpdateJobConfig{
+						Resources: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("1"),
+								corev1.ResourceMemory: resource.MustParse("1Gi"),
+							},
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("500m"),
+								corev1.ResourceMemory: resource.MustParse("512Mi"),
+							},
+						},
+					},
+				},
+			}
+
+			job := NewSecurityconfigUpdateJob(&clusterObject, "dummy", "dummy", "dummy", "dummy", "dummy", nil, nil)
+			Expect(job.Spec.Template.Spec.Containers[0].Resources).To(Equal(clusterObject.Spec.Security.Config.UpdateJob.Resources))
+		})
+
+		It("should propagate Resources to the Security Config UpdateJob if partially configured", func() {
+			clusterObject := ClusterDescWithVersion("2.2.1")
+			clusterObject.Spec.Security = &opsterv1.Security{
+				Config: &opsterv1.SecurityConfig{
+					UpdateJob: opsterv1.SecurityUpdateJobConfig{
+						Resources: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU: resource.MustParse("1"),
+							},
+						},
+					},
+				},
+			}
+
+			job := NewSecurityconfigUpdateJob(&clusterObject, "dummy", "dummy", "dummy", "dummy", "dummy", nil, nil)
+			Expect(job.Spec.Template.Spec.Containers[0].Resources).To(Equal(clusterObject.Spec.Security.Config.UpdateJob.Resources))
 		})
 	})
 })

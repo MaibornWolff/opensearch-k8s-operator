@@ -4,7 +4,7 @@ This page provides information how to develop changes for the operator code. Ple
 
 ## Needed environment and tools
 
-The operator is developed in Go, as such you need a current Go toolkit (for Linux most distributions provide packages, otherwise get it from the [go homepage](https://go.dev/)). Please use version 1.19 (at least 1.18 is required) as this version is used by the CI pipelines. You also need an editor/IDE, ideally with Go support. We recommend either [VS Code](https://code.visualstudio.com/) with the official Go extension or [GoLand](https://www.jetbrains.com/go/).
+The operator is developed in Go, as such you need a current Go toolkit (for Linux most distributions provide packages, otherwise get it from the [go homepage](https://go.dev/)). Please use version 1.22.1 as this version is used by the CI pipelines. You also need an editor/IDE, ideally with Go support. We recommend either [VS Code](https://code.visualstudio.com/) with the official Go extension or [GoLand](https://www.jetbrains.com/go/).
 
 Additional tools you will need:
 
@@ -39,6 +39,7 @@ The basic structure of the code looks like follows:
     * `reconcilers`: Each reconciler deals with one specific aspect of a cluster
     * `tls`: Code specific for certificate management
   * `Dockerfile`: Multi-Architecture Dockerfile for the operator, use with `docker buildx`
+    * The docker base image used is `gcr.io/distroless/static:nonroot` from [distroless](https://github.com/GoogleContainerTools/distroless) which do not contain package managers. To downloads the package source files for operator docker image, click the following [link](https://ci.opensearch.org/ci/dbc/opensearch-operator/operator-debian-source-files.tar.xz).
   * `main.go`: The entrypoint for the operator code. Initializes the runtime and starts the actual controllers
   * `Makefile`: The makefile that contains commands/targets helping with developing the operator
 

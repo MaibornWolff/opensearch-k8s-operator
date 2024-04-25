@@ -165,6 +165,8 @@ For security reasons, encryption is required for communication with the OpenSear
 
 Depending on your requirements, the Operator offers two ways of managing TLS certificates. You can either supply your own certificates, or the Operator will generate its own CA and sign certificates for all nodes using that CA. The second option is recommended, unless you want to directly expose your OpenSearch cluster outside your Kubernetes cluster, or your organization has rules about using self-signed certificates for internal communication.
 
+> :warning: **Clusters with operator-generated certificates will stop working after 1 year**: Make sure you have tested certificate renewals in your cluster before putting it in production!
+
 TLS certificates are used in three places, and each can be configured independently.
 
 #### Node Transport
@@ -358,11 +360,9 @@ spec:
 
 This will configure an init container for each opensearch pod that executes the needed `sysctl` command. By default the init container uses a busybox image. If you want to change that (for example to use an image from a private registry), see [Custom init helper](#custom-init-helper).
 
-### Configuring Snapshot Repo (BETA)
+### Configuring Snapshot Repositories
 
-This feature is Currently in BETA, you can configure the snapshot repo settings for the OpenSearch cluster through the operator. Using `snapshotRepositories` settings you can configure multiple snapshot repos. Once the snapshot repo is configured a user can create custom `_ism` policies through dashboard to backup the in indexes.
-
-Note: BETA flagged Features in a release are experimental. Therefore, we do not recommend the use of configuring snapshot repo in a production environment. For updates on the progress of snapshot/restore, or if you want leave feedback/contribute that could help improve the feature, please refer to the issue on [GitHub](https://github.com/Opster/opensearch-k8s-operator/issues/278).
+You can configure the snapshot repositories for the OpenSearch cluster through the operator. Using `general.snapshotRepositories` settings you can configure multiple snapshot repositories. Once the snapshot repository is configured a user can create custom `_ism` policies through dashboard to backup indexes.
 
 ```yaml
 spec:
@@ -384,7 +384,7 @@ spec:
 
 #### Prerequisites for Configuring Snapshot Repo
 
-Before applying the setting `snapshotRepositories` to the operator, please ensure the following prerequisites are met.
+Before configuring `snapshotRepositories` for a cluster, please ensure the following prerequisites are met:
 
 1. The right cloud provider native plugins are installed. For example:
 
@@ -394,9 +394,7 @@ Before applying the setting `snapshotRepositories` to the operator, please ensur
         pluginsList: ["repository-s3"]
     ```
 
-2. Ensure the cluster is fully healthy before applying the `snapshotRepositories` settings to the custom resource. Note: For the BETA you cannot add the settings if the cluster is not yet provisioned and healthy, otherwise the configuration of the repositories will fail.
-
-3. The required roles/permissions for the backend cloud are pre-created. Example: Following is the AWS IAM role added for kubernetes nodes so that snapshots can be published to `opensearch-s3-snapshot` s3 bucket.
+2. The required roles/permissions for the backend cloud are pre-created. An example AWS IAM role added for kubernetes nodes so that snapshots can be published to the `opensearch-s3-snapshot` s3 bucket:
 
     ```json
     {
@@ -696,7 +694,7 @@ spec:
 
 ### Additional Volumes
 
-Sometimes it is neccessary to mount ConfigMaps, Secrets or emptyDir into the Opensearch pods as volumes to provide additional configuration (e.g. plugin config files).  This can be achieved by providing an array of additional volumes to mount to the custom resource. This option is located in either `spec.general.additionalVolumes` or `spec.dashboards.additionalVolumes`.  The format is as follows:
+Sometimes it is neccessary to mount ConfigMaps, Secrets, emptyDir or CSI volumes into the Opensearch pods as volumes to provide additional configuration (e.g. plugin config files).  This can be achieved by providing an array of additional volumes to mount to the custom resource. This option is located in either `spec.general.additionalVolumes` or `spec.dashboards.additionalVolumes`. The format is as follows:
 
 ```yaml
 spec:
@@ -711,6 +709,14 @@ spec:
     - name: temp
       path: /tmp
       emptyDir: {}
+    - name: example-csi-volume
+      path: /path/to/mount/volume
+      #subPath: "subpath" # Add this to mount the CSI volume at a specific subpath
+      csi:
+        driver: csi-driver-name
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: example-secret-provider-class  
   dashboards:
     additionalVolumes:
     - name: example-secret
@@ -893,6 +899,81 @@ spec:
 If you want to expose the REST API of OpenSearch outside your Kubernetes cluster, the recommended way is to do this via ingress.
 Internally you should use self-signed certificates (you can let the operator generate them), and then let the ingress use a certificate from an accepted CA (for example LetsEncrypt or a company-internal CA). That way you do not have the hassle of supplying custom certificates to the opensearch cluster but your users still see valid certificates.
 
+### Customizing probe timeouts and thresholds
+
+If the cluster nodes do not spins up before the threshold reaches and the pod restarts the timeouts and thresholds can be configured per node as per the requirements.
+
+```yaml
+apiVersion: opensearch.opster.io/v1
+kind: OpenSearchCluster
+...
+spec:
+  nodePools:
+    - component: masters
+      replicas: 3
+      diskSize: "30Gi"
+      probes:
+        liveness:
+          initialDelaySeconds: 10
+          periodSeconds: 20
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 10
+        startup:
+          initialDelaySeconds: 10
+          periodSeconds: 20
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 10
+        readiness:
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 30
+          failureThreshold: 5
+```
+
+### Configuring Resource Limits/Requests
+
+In addition to the information provided in the previous sections on how to specify resource requirements for the node pools, it is also possible to specify resources for all entities created by the operator for more advanced use cases.
+
+The operator generates many pods via resources such as jobs, stateful sets, replica sets, and others, which utilize InitContainers. The following configuration allows you to specify a default resources config for all InitContainer.
+
+```yaml
+apiVersion: opensearch.opster.io/v1
+kind: OpenSearchCluster
+...
+spec:
+  initHelper:
+    resources:
+      requests:
+        memory: "50Mi"
+        cpu: "50m"
+      limits:
+        memory: "200Mi"
+        cpu: "200m"
+```
+
+You can also configure the resources for the security update job as shown below.
+
+```yaml
+apiVersion: opensearch.opster.io/v1
+kind: OpenSearchCluster
+...
+spec:
+  security:
+    config:
+      updateJob:
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "100Mi"
+          requests:
+            cpu: "100m"
+            memory: "100Mi"
+```
+
+Please note that the examples provided here do not reflect actual resource requirements. You may need to conduct further testing to properly adjust the resources based on your specific needs.
+
 ## Cluster operations
 
 The operator contains several features that automate management tasks that might be needed during the cluster lifecycle. The different available options are documented here.
@@ -947,7 +1028,7 @@ Note: To change the `diskSize` from `G` to `Gi` or vice-versa, first make sure d
 
 ## User and role management
 
-An important part of any OpenSearch cluster is the user and role management to give users access to the cluster (via the opensearch-security plugin). By default the operator will use the included demo securityconfig with default users (see [internal_users.yml](https://github.com/opensearch-project/security/blob/main/securityconfig/internal_users.yml) for a list of users). For any production installation you should swap that out with your own configuration.
+An important part of any OpenSearch cluster is the user and role management to give users access to the cluster (via the opensearch-security plugin). By default the operator will use the included demo securityconfig with default users (see [internal_users.yml](https://github.com/opensearch-project/security/blob/main/config/internal_users.yml) for a list of users). For any production installation you should swap that out with your own configuration.
 There are two ways to do that with the operator:
 
 * Defining your own securityconfig
@@ -1210,7 +1291,7 @@ It is possible to manage OpenSearch ISM policies in Kubernetes with the operator
 
 ```yaml
 apiVersion: opensearch.opster.io/v1
-kind: OpensearchISMPolicy
+kind: OpenSearchISMPolicy
 metadata:
    name: sample-policy
 spec:
@@ -1241,14 +1322,14 @@ spec:
            - delete: {}
 ```
 
-The namespace of the `OpensearchISMPolicy` must be the namespace the OpenSearch cluster itself is deployed in. `policyId` is an optional field, and if not provided `metadata.name` is used as the default.
+The namespace of the `OpenSearchISMPolicy` must be the namespace the OpenSearch cluster itself is deployed in. `policyId` is an optional field, and if not provided `metadata.name` is used as the default.
 
 ## Managing index and component templates
 
 The operator provides the OpensearchIndexTemplate and OpensearchComponentTemplate CRDs, which is used for managing index and component templates respectively.
 
 The two CRD specifications attempts to be as close as possible to what the OpenSearch API expects, with some changes from snake_case to camelCase.
-The fields that have been changed, is `index_patterns` to `indexPatterns` (OpensearchIndexTemplate only), `composed_of` to `composedOf` (OpensearchIndexTemplate only), `allow_auto_create` to `allowAutoCreate` (OpensearchComponentTemplate only), and `template.aliases.<alias>.is_write_index` to `template.aliases.<alias>.isWriteIndex`.
+The fields that have been changed, is `index_patterns` to `indexPatterns` (OpensearchIndexTemplate only), `composed_of` to `composedOf` (OpensearchIndexTemplate only) and `template.aliases.<alias>.is_write_index` to `template.aliases.<alias>.isWriteIndex`.
 
 The following example creates a component template for setting the number of shards and replicas, together with specifying a specific time format for documents:
 
@@ -1275,7 +1356,6 @@ spec:
         value:
           type: double
   version: 1 # optional
-  allowAutoCreate: false # optional
   _meta: # optional
     description: example description
 ```
