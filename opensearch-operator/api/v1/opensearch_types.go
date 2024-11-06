@@ -155,6 +155,7 @@ type MonitoringConfig struct {
 	ScrapeInterval       string               `json:"scrapeInterval,omitempty"`
 	PluginURL            string               `json:"pluginUrl,omitempty"`
 	TLSConfig            *MonitoringConfigTLS `json:"tlsConfig,omitempty"`
+	Labels               map[string]string    `json:"labels,omitempty"`
 }
 
 type MonitoringConfigTLS struct {
@@ -170,6 +171,8 @@ type BootstrapConfig struct {
 	Jvm          string                      `json:"jvm,omitempty"`
 	// Extra items to add to the opensearch.yml, defaults to General.AdditionalConfig
 	AdditionalConfig map[string]string `json:"additionalConfig,omitempty"`
+	PluginsList      []string          `json:"pluginsList,omitempty"`
+	Keystore         []KeystoreValue   `json:"keystore,omitempty"`
 }
 
 type DashboardsServiceSpec struct {
@@ -295,6 +298,8 @@ type AdditionalVolume struct {
 	EmptyDir *corev1.EmptyDirVolumeSource `json:"emptyDir,omitempty"`
 	// CSI object to use to populate the volume
 	CSI *corev1.CSIVolumeSource `json:"csi,omitempty"`
+	// Projected object to use to populate the volume
+	Projected *corev1.ProjectedVolumeSource `json:"projected,omitempty"`
 	// Whether to restart the pods on content change
 	RestartPods bool `json:"restartPods,omitempty"`
 }
